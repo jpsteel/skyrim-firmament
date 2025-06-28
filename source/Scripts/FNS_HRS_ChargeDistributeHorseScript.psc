@@ -1,0 +1,1 @@
+Scriptname FNS_HRS_ChargeDistributeHorseScript extends activemagiceffect  
