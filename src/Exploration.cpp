@@ -113,7 +113,7 @@ RE::BSEventNotifyControl Exploration::EventProcessor::ProcessEvent(
                 static auto msgRef = RE::TESForm::LookupByEditorID<RE::BGSMessage>("FNS_LayOfTheLandMessage");
                 RE::BSString msg;
                 msgRef->GetDescription(msg, msgRef);
-                RE::DebugNotification(msg.c_str());
+                RE::SendHUDMessage::ShowHUDMessage(msg.c_str());
             }
         } else if (!event->opening) {
             survivalEnabled->value = originalSurvivalEnabled;
@@ -246,7 +246,7 @@ RE::BSEventNotifyControl Exploration::EventProcessor::ProcessEvent(const RE::TES
         static auto msgRef = RE::TESForm::LookupByEditorID<RE::BGSMessage>("FNS_WanderersPeaceMessageFail");
         RE::BSString msg;
         msgRef->GetDescription(msg, msgRef);
-        RE::DebugNotification(msg.c_str());
+        RE::SendHUDMessage::ShowHUDMessage(msg.c_str());
         peaceDaysPassed->value = gameDaysPassed->value + 0.05;
         logger::info("[Wanderer's Peace] Restarting \"Wanderer’s Peace\" cooldown.");
         return RE::BSEventNotifyControl::kContinue;
@@ -259,7 +259,7 @@ RE::BSEventNotifyControl Exploration::EventProcessor::ProcessEvent(const RE::TES
         static auto msgRef = RE::TESForm::LookupByEditorID<RE::BGSMessage>("FNS_WanderersPeaceMessageSuccess");
         RE::BSString msg;
         msgRef->GetDescription(msg, msgRef);
-        RE::DebugNotification(msg.c_str());
+        RE::SendHUDMessage::ShowHUDMessage(msg.c_str());
     }
 
     return RE::BSEventNotifyControl::kContinue;
@@ -328,7 +328,7 @@ void Exploration::PilgrimClearSkies() {
                 static auto msgRef = RE::TESForm::LookupByEditorID<RE::BGSMessage>("FNS_PilgrimMessage");
                 RE::BSString msg;
                 msgRef->GetDescription(msg, msgRef);
-                RE::DebugNotification(msg.c_str());
+                RE::SendHUDMessage::ShowHUDMessage(msg.c_str());
                 caster->CastSpellImmediate(pilgrimSpell, false, player, 1.0f, false, 0.0f, player);
             }
         }
@@ -345,7 +345,7 @@ void Exploration::DiscoverRandomLocation() {
         RE::BSString msg;
         msgRef->GetDescription(msg, msgRef);
         std::string msgStr = msg.c_str();
-        RE::DebugNotification(msgStr.c_str());
+        RE::SendHUDMessage::ShowHUDMessage(msgStr.c_str());
         return;
     }
 
@@ -357,15 +357,14 @@ void Exploration::DiscoverRandomLocation() {
         extraMapMarker && extraMapMarker->mapData) {
         auto locName = extraMapMarker->mapData->locationName.GetFullName();
         logger::info("[Wayfarer] Random undiscovered location: {}", locName);
-        extraMapMarker->mapData->flags.set(RE::MapMarkerData::Flag::kVisible, RE::MapMarkerData::Flag::kCanTravelTo,
-                                           RE::MapMarkerData::Flag::kDiscovered);
+        extraMapMarker->mapData->flags.set(RE::MapMarkerData::Flag::kVisible, RE::MapMarkerData::Flag::kCanTravelTo);
         randomLoc->AddChange(RE::TESObjectREFR::ChangeFlags::kGameOnlyExtra);
         static auto msgRef = RE::TESForm::LookupByEditorID<RE::BGSMessage>("FNS_WayfarerMessage");
         RE::BSString msg;
         msgRef->GetDescription(msg, msgRef);
         std::string msgStr = msg.c_str();
         msgStr.append(locName);
-        RE::DebugNotification(msgStr.c_str());
+        RE::SendHUDMessage::ShowHUDMessage(msgStr.c_str());
     } else {
         logger::warn("[Wayfarer] No valid ExtraMapMarker found on random location.");
     }
@@ -427,7 +426,7 @@ void Exploration::UpdateCamperWellRested() {
         static auto msgRef = RE::TESForm::LookupByEditorID<RE::BGSMessage>("WellRestedMessage");
         RE::BSString msg;
         msgRef->GetDescription(msg, msgRef);
-        RE::DebugNotification(msg.c_str());
+        RE::SendHUDMessage::ShowHUDMessage(msg.c_str());
     }
 }
 

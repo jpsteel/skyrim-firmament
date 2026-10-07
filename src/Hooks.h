@@ -3,10 +3,11 @@
 
 #include "Exploration.h"
 #include "Utility.h"
-#include <xbyak/xbyak.h>
 
 namespace SharedHooks {
     void InstallHooks();
+    void InstallSkillUseGuard();
+
     static void Update(RE::PlayerCharacter* player, float delta);
     static inline REL::Relocation<decltype(Update)> _Update;
 }

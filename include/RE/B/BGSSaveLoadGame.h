@@ -90,11 +90,10 @@ namespace RE
 			kPlayerLocationInvalid = 1 << 6
 		};
 
-		static BGSSaveLoadGame* GetSingleton()
-		{
-			REL::Relocation<BGSSaveLoadGame**> singleton{ Offset::BGSSaveLoadGame::Singleton };
-			return *singleton;
-		}
+		[[nodiscard]] static BGSSaveLoadGame* GetSingleton() {
+            REL::Relocation<BGSSaveLoadGame**> singleton{RELOCATION_ID(516851, 403330)};
+            return *singleton;
+        }
 
 		[[nodiscard]] bool GetGlobalAllowChanges() const noexcept { return globalFlags.all(GlobalFlags::kAllowChanges); }
 		[[nodiscard]] bool GetSaveGameLoading() const noexcept { return globalFlags.all(GlobalFlags::kSaveGameLoading); }

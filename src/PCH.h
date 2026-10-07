@@ -19,6 +19,26 @@
 #include "RE/G/GFxValue.h"
 #include "RE/B/BSScaleformManager.h"
 #include "RE/I/InterfaceStrings.h"
+#include "RE/M/Misc.h"
+
+inline std::ptrdiff_t VersionedOffset(std::ptrdiff_t se, std::ptrdiff_t aePre629, std::ptrdiff_t ae117x,
+                                      std::ptrdiff_t ae17x) {
+    const auto version = REL::Module::get().version();
+
+    if (REL::Module::IsSE()) {
+        return se;
+    }
+
+    if (version < REL::Version{1, 6, 629, 0}) {
+        return aePre629;
+    }
+
+    if (version < REL::Version{1, 7, 0, 0}) {
+        return ae117x;
+    }
+
+    return ae17x;
+}
 
 using namespace std::literals;
 

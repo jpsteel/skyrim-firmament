@@ -13,6 +13,8 @@ void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) {
     auto philosophyEventProcessor = Philosophy::EventProcessor::GetSingleton();
     switch (message->type) {
         case SKSE::MessagingInterface::kDataLoaded: {
+            SharedHooks::InstallSkillUseGuard();
+
             RE::UI::GetSingleton()->AddEventSink<RE::MenuOpenCloseEvent>(horsemanEventProcessor);
             RE::UI::GetSingleton()->AddEventSink<RE::MenuOpenCloseEvent>(philosophyEventProcessor);
             RE::UI::GetSingleton()->AddEventSink<RE::MenuOpenCloseEvent>(explorationEventProcessor);
@@ -41,12 +43,15 @@ void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) {
             Exploration::InitCachedValues();
 
             //Philosophy
+            Philosophy::InitBookReadState();
             Philosophy::UpdateAvidReader(false);
             Philosophy::UpdateErudite(false);
             Philosophy::UpdateCultist(false);
             break;
         case SKSE::MessagingInterface::kPostLoad:
         case SKSE::MessagingInterface::kNewGame:
+            Philosophy::InitBookReadState();
+            break;
         case SKSE::MessagingInterface::kSaveGame:
         default: 
             break;
@@ -71,7 +76,6 @@ extern "C" [[maybe_unused]] __declspec(dllexport) bool SKSEPlugin_Load(const SKS
     
     Horseman::InstallHooks();
     Exploration::InstallHooks();
-    Philosophy::InstallHooks();
     SharedHooks::InstallHooks();
 
     logger::info("Successfully loaded Firmament.dll!");

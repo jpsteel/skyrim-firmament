@@ -3,10 +3,59 @@
 #include "editorID.hpp"
 
 bool Philosophy::inApocrypha = false;
+static std::unordered_set<RE::FormID> readBooks;
+
+void Philosophy::InitBookReadState() {
+    readBooks.clear();
+
+    auto* dataHandler = RE::TESDataHandler::GetSingleton();
+    if (!dataHandler) {
+        return;
+    }
+
+    for (auto* book : dataHandler->GetFormArray<RE::TESObjectBOOK>()) {
+        if (book && book->IsRead()) {
+            readBooks.insert(book->GetFormID());
+        }
+    }
+
+    logger::info("Tracked {} already-read books.", readBooks.size());
+}
+
+bool Philosophy::IsNote(RE::TESObjectBOOK* book) {
+    if (!book) {
+        return false;
+    }
+
+    const char* model = book->GetModel();
+    if (!model) {
+        return false;
+    }
+
+    std::string path = model;
+    std::ranges::transform(path, path.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+    return path.find("\\note") != std::string::npos || path.find("\\letter") != std::string::npos;
+}
 
 RE::BSEventNotifyControl Philosophy::EventProcessor::ProcessEvent(
     const RE::MenuOpenCloseEvent* event, RE::BSTEventSource<RE::MenuOpenCloseEvent>* eventSource) {
     if (!event) {
+        return RE::BSEventNotifyControl::kContinue;
+    }
+
+    if (event->opening && event->menuName == RE::BookMenu::MENU_NAME) {
+        auto* book = RE::BookMenu::GetTargetForm();
+
+        if (book && !IsNote(book)) {
+            const auto formID = book->GetFormID();
+
+            if (!readBooks.contains(formID)) {
+                readBooks.insert(formID);
+                PhilosophyProcessBookXP(book);
+            }
+        }
+
         return RE::BSEventNotifyControl::kContinue;
     }
 
@@ -91,7 +140,7 @@ RE::BSEventNotifyControl Philosophy::EventProcessor::ProcessEvent(
         static auto msgRef = RE::TESForm::LookupByEditorID<RE::BGSMessage>("FNS_LinguistMessageFail");
         RE::BSString msg;
         msgRef->GetDescription(msg, msgRef);
-        RE::DebugNotification(msg.c_str());
+        RE::SendHUDMessage::ShowHUDMessage(msg.c_str());
         linguistDaysPassed->value = gameDaysPassed->value + 0.05;
         logger::info("Restarting \"Linguist\" cooldown.");
         return RE::BSEventNotifyControl::kContinue;
@@ -104,7 +153,7 @@ RE::BSEventNotifyControl Philosophy::EventProcessor::ProcessEvent(
         static auto msgRef = RE::TESForm::LookupByEditorID<RE::BGSMessage>("FNS_LinguistMessageSuccess");
         RE::BSString msg;
         msgRef->GetDescription(msg, msgRef);
-        RE::DebugNotification(msg.c_str());
+        RE::SendHUDMessage::ShowHUDMessage(msg.c_str());
     }
 
     return RE::BSEventNotifyControl::kContinue;
@@ -132,26 +181,19 @@ RE::BSEventNotifyControl Philosophy::EventProcessor::ProcessEvent(
     return RE::BSEventNotifyControl::kContinue;
 }
 
-RE::BSEventNotifyControl Philosophy::EventProcessor::ProcessEvent(
-    const RE::TESQuestStageEvent* event, RE::BSTEventSource<RE::TESQuestStageEvent>* eventSource) {
+RE::BSEventNotifyControl Philosophy::EventProcessor::ProcessEvent(const RE::TESQuestStageEvent* event,
+                                                                  RE::BSTEventSource<RE::TESQuestStageEvent>*) {
     if (!event) {
         return RE::BSEventNotifyControl::kContinue;
     }
+
     UpdateCultist(true);
 
     return RE::BSEventNotifyControl::kContinue;
 }
 
-void Philosophy::InstallHooks() {
-    ReadBookInventory::Install();
-    ReadBookContainer::Install();
-    ReadBookReference::Install();
-
-    logger::info("Philosophy hooks successfully installed.");
-}
-
 void Philosophy::PhilosophyProcessBookXP(RE::TESObjectBOOK* book) {
-    if (!book || book->IsRead()) return;
+    if (!book) return;
 
     float skillXP = book->GetGoldValue() + 50;
     float clampedXP = std::clamp(skillXP, 0.0f, 100.0f);
@@ -162,17 +204,13 @@ void Philosophy::PhilosophyProcessBookXP(RE::TESObjectBOOK* book) {
         clampedXP *= 1 + (potionBonus / 100.0f);
         customSkills->AdvanceSkill("Philosophy", clampedXP);
         logger::info("Advancing Philosophy Skill +{}.", clampedXP);
-        UpdateAvidReader(true);
-        UpdateErudite(true);
+        UpdateAvidReader(false);
+        UpdateErudite(false);
         LuckyHand();
     }
 }
 
-bool Philosophy::ReadBookReference::thunk(RE::TESObjectBOOK* a1, RE::PlayerCharacter* a2) {
-    logger::trace("Hook: Read from world");
-    PhilosophyProcessBookXP(a1);
-    return func(a1, a2);
-}
+bool Philosophy::ReadBookReference::thunk(RE::TESObjectBOOK* a1, RE::TESObjectREFR* a2) { return func(a1, a2); }
 
 bool Philosophy::ReadBookInventory::thunk(RE::TESObjectBOOK* a1, RE::PlayerCharacter* a2) {
     logger::trace("Hook: Read from Inventory");
@@ -187,17 +225,20 @@ bool Philosophy::ReadBookContainer::thunk(RE::TESObjectBOOK* a1, RE::PlayerChara
 }
 
 void Philosophy::ReadBookInventory::Install() {
-    REL::Relocation<std::uintptr_t> target{REL::ID(51870), 0x1A7};
+    REL::Relocation<std::uintptr_t> target{REL::ID(51870), VersionedOffset(0x1A7, 0x1A7, 0x1A7, 0x1A7)};
+
     stl::write_thunk_call<ReadBookInventory>(target.address());
 }
 
 void Philosophy::ReadBookReference::Install() {
-    REL::Relocation<std::uintptr_t> target{REL::ID(51053), 0x231};
+    REL::Relocation<std::uintptr_t> target{RELOCATION_ID(50122, 51053), VersionedOffset(0x22D, 0x231, 0x268, 0x295)};
+
     stl::write_thunk_call<ReadBookReference>(target.address());
 }
 
 void Philosophy::ReadBookContainer::Install() {
-    REL::Relocation<std::uintptr_t> target{REL::ID(51149), 0x18E};
+    REL::Relocation<std::uintptr_t> target{REL::ID(51149), VersionedOffset(0x18E, 0x18E, 0x18E, 0x18E)};
+
     stl::write_thunk_call<ReadBookContainer>(target.address());
 }
 
@@ -251,7 +292,7 @@ void Philosophy::LuckyHand() {
         std::string msgStrBegin = msgBegin.c_str();
         std::string msgStrEnd = msgEnd.c_str();
         msgFull.append(msgStrBegin).append(scroll->GetName()).append(msgStrEnd);
-        RE::DebugNotification(msgFull.c_str());
+        RE::SendHUDMessage::ShowHUDMessage(msgFull.c_str());
     }
 }
 

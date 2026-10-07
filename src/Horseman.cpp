@@ -68,8 +68,10 @@ RE::BSEventNotifyControl Horseman::EventProcessor::ProcessEvent(const RE::MenuOp
 void Horseman::InstallHooks() {
     auto& trampoline = SKSE::GetTrampoline();
 
-    REL::Relocation<uintptr_t> processhit_hook{RELOCATION_ID(37673, 38627)};
-    _ProcessHit = trampoline.write_call<5>(processhit_hook.address() + REL::Relocate(0x3C0, 0x4A8), ProcessHit);
+    REL::Relocation<std::uintptr_t> processhit_hook{RELOCATION_ID(37673, 38627),
+                                                    VersionedOffset(0x3C0, 0x4A8, 0x4A8, 0x4A8)};
+
+    _ProcessHit = trampoline.write_call<5>(processhit_hook.address(), ProcessHit);
 
     MoveSpeedPatch();
     SpeedMultModifiedPatch();
@@ -108,10 +110,11 @@ void Horseman::ProcessHit(RE::Actor* victim, RE::HitData& hitData) {
 }
 
 void Horseman::MoveSpeedPatch() {
-    auto hook = REL::Relocation<std::uintptr_t>(RE::Offset::Actor::ComputeMovementType, 0x51);
+    REL::Relocation<std::uintptr_t> hook{RE::Offset::Actor::ComputeMovementType,
+                                         VersionedOffset(0x51, 0x51, 0x51, 0x51)};
+
     REL::make_pattern<"E8">().match_or_fail(hook.address());
 
-    // TRAMPOLINE: 14
     auto& trampoline = SKSE::GetTrampoline();
     _GetScale = trampoline.write_call<5>(hook.address(), &GetSpeedMult);
 }

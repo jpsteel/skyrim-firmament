@@ -24,8 +24,9 @@ namespace Philosophy {
                                               RE::BSTEventSource<RE::TESQuestStageEvent>* eventSource) override;
     };
 
-    void InstallHooks();
     void PhilosophyProcessBookXP(RE::TESObjectBOOK* book);
+    void InitBookReadState();
+    bool IsNote(RE::TESObjectBOOK* book);
 
     ////////////credits to SeaSparrow for the following hooks (https://github.com/SeaSparrowOG/SpellLearning)
     // Hook triggers when reading a book from a container, but not the player's inventory.
@@ -48,7 +49,7 @@ namespace Philosophy {
 
     // Hook triggers when reading a book from the overworld.
     struct ReadBookReference {
-        static bool thunk(RE::TESObjectBOOK* a1, RE::PlayerCharacter* a2);
+        static bool thunk(RE::TESObjectBOOK* a1, RE::TESObjectREFR* a2);
 
         static void Install();
 
